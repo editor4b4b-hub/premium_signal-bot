@@ -1,120 +1,137 @@
 import os
-import json
-import time
 import logging
-import requests
 import random
-import asyncio
-import openai
-from datetime import datetime
+import requests
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    filters,
-    ContextTypes,
-)
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from dotenv import load_dotenv
 
-# ==============================
-# ENVIRONMENT VARIABLES
-# ==============================
+# ✅ Load .env file
+load_dotenv()
+
+# 🔑 Read secrets
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = os.getenv("Premium_Signal")
 
-if not BOT_TOKEN:
-    raise ValueError("❌ BOT_TOKEN পাওয়া যায়নি! GitHub Codespaces Secrets চেক করো।")
-
-if not OPENAI_API_KEY:
-    print("⚠️ সতর্কতা: OPENAI_API_KEY পাওয়া যায়নি। কিছু ফিচার কাজ নাও করতে পারে।")
-
-# ==============================
-# OPENAI CLIENT SETUP
-# ==============================
-client = None
-if OPENAI_API_KEY:
-    openai.api_key = OPENAI_API_KEY
-    client = openai.OpenAI(api_key=OPENAI_API_KEY)
-
-# ==============================
-# LOGGING CONFIGURATION
-# ==============================
+# 🛡️ Basic logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
 
-STATE_FILE = "state.json"
-API_BASE = "https://draw.ar-lottery01.com/WinGo/WinGo_30S"
-API_PATH = "GetHistoryIssuePage.json"
+# ✅ History counter
+history = {
+    "big_small": {"win": 0, "loss": 0},
+    "color": {"win": 0, "loss": 0},
+    "number": {"win": 0, "loss": 0},
+    "round": 0
+}
 
-# ==============================
-# UTILITY FUNCTIONS
-# ==============================
-def load_state():
-    if os.path.exists(STATE_FILE):
-        with open(STATE_FILE, "r") as f:
-            return json.load(f)
-    return {}
+# 🎯 Helper: Random Signal
+def generate_signal():
+    numbers = list(range(10))
+    chosen_number = random.choice(numbers)
 
-def save_state(state):
-    with open(STATE_FILE, "w") as f:
-        json.dump(state, f, indent=4)
+    # Color
+    if chosen_number in [1, 3, 5, 7, 9]:
+        color = "🟢 GREEN"
+    elif chosen_number in [2, 4, 6, 8]:
+        color = "🔴 RED"
+    elif chosen_number == 0:
+        color = "🔴 RED & 🟣 VIOLET"
+    elif chosen_number == 5:
+        color = "🟢 GREEN & 🟣 VIOLET"
 
-# ==============================
-# TELEGRAM HANDLERS
-# ==============================
+    # Size
+    size = "BIG" if chosen_number >= 5 else "SMALL"
+
+    # Win/Loss (Demo)
+    result = random.choice(["WIN", "LOSS"])
+    if result == "WIN":
+        history["big_small"]["win"] += 1
+        history["color"]["win"] += 1
+        history["number"]["win"] += 1
+    else:
+        history["big_small"]["loss"] += 1
+        history["color"]["loss"] += 1
+        history["number"]["loss"] += 1
+
+    history["round"] += 1
+
+    return chosen_number, color, size, result
+
+
+# 🟢 /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ Bot চলছে! /live কমান্ড দিয়ে সিগন্যাল দেখো।")
+    await update.message.reply_text(
+        "👋 Welcome to Premium Signal Bot!\n\n"
+        "📡 /signal → Get new signal\n"
+        "📊 /history → Win/Loss summary\n"
+        "📜 /live → Live result from API"
+    )
 
+
+# 🟢 /signal
+async def signal(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    number, color, size, result = generate_signal()
+    await update.message.reply_text(
+        f"🎯 Round: {history['round']}\n"
+        f"Size: {size}\n"
+        f"Color: {color}\n"
+        f"Number: {number}\n"
+        f"Result: ✅ {result}"
+    )
+
+
+# 🟢 /history
+async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        f"📊 Signal History\n"
+        f"━━━━━━━━━━━━━━━\n"
+        f"BIG/SMALL ➜ ✅ {history['big_small']['win']} | ❌ {history['big_small']['loss']}\n"
+        f"COLOR     ➜ ✅ {history['color']['win']} | ❌ {history['color']['loss']}\n"
+        f"NUMBER    ➜ ✅ {history['number']['win']} | ❌ {history['number']['loss']}\n"
+        f"📢 Last Round: {history['round']}"
+    )
+
+
+# 🟢 /live → Real API
 async def live(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    state = load_state()
     try:
-        response = requests.post(f"{API_BASE}/{API_PATH}", json={"page": 1, "size": 1})
+        url = "https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistorylssuePage.json"
+        response = requests.get(url, timeout=10)
         data = response.json()
 
         if "data" in data and "list" in data["data"]:
             last_result = data["data"]["list"][0]
-
-            issue = last_result.get("issue")
-            number = last_result.get("number")
-            api_color = last_result.get("color")
-            size = last_result.get("size")
-
-            # state update
-            state["last_prediction"] = {
-                "issue": issue,
-                "number": number,
-                "color": api_color,
-                "size": size,
-                "checked_at": str(datetime.now())
-            }
-            save_state(state)
-
-            msg = (
-                "📊 Live Result\n"
-                f"🔢 Issue: {issue}\n"
-                f"🎲 Number: {number}\n"
-                f"🎨 API Color: {api_color}\n"
-                f"📏 Size: {size}\n"
+            await update.message.reply_text(
+                f"📡 Live Result\n"
+                f"━━━━━━━━━━━━━━━\n"
+                f"Round: {last_result['issue']}\n"
+                f"Number: {last_result['number']}\n"
+                f"Open Time: {last_result['openTime']}"
             )
-            await update.message.reply_text(msg)
         else:
-            await update.message.reply_text("⚠️ ডাটা আনতে সমস্যা হয়েছে। পরে চেষ্টা করো।")
+            await update.message.reply_text("⚠️ লাইভ ডেটা পাওয়া যায়নি।")
+
     except Exception as e:
-        await update.message.reply_text(f"❌ Error: {e}")
+        await update.message.reply_text(f"⚠️ API Error: {e}")
 
-# ==============================
-# MAIN FUNCTION
-# ==============================
-async def main():
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("live", live))
+# মেইন ফাংশন
+def main():
+    if not BOT_TOKEN:
+        raise ValueError("❌ BOT_TOKEN .env ফাইলে পাওয়া যায়নি!")
 
-    print("🤖 Bot চলছে... বন্ধ করতে Ctrl+C চাপুন।")
-    await application.run_polling()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("signal", signal))
+    app.add_handler(CommandHandler("history", history_command))
+    app.add_handler(CommandHandler("live", live))
+
+    app.run_polling()
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
