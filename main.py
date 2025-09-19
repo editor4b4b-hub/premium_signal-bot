@@ -1,9 +1,8 @@
 import os
 import logging
 import random
-import openai
 import requests
-import time
+import openai
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -11,25 +10,11 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 OPENAI_API_KEY = os.getenv("Premium_Signal")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-import openai
+# ✅ OpenAI কনফিগ (নতুন ভার্সনের জন্য)
+openai.api_key = OPENAI_API_KEY
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
-# ✅ OpenAI নতুন ভার্সনের জন্য কনফিগ
-client = openai.OpenAI(api_key=openai.api_key)
-
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_message = update.message.text
-    try:
-        # ✅ নতুন ভার্সনের জন্য Chat API ব্যবহার
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": user_message}],
-        )
-        reply = response.choices[0].message.content
-        await update.message.reply_text(reply)
-    except Exception as e:
-        await update.message.reply_text(f"⚠️ কিছু ভুল হয়েছে: {e}")
-
-# লগিং সেটআপ
+# ✅ লগিং সেটআপ
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -55,6 +40,8 @@ def generate_signal():
         color = "🔴 RED"
     elif chosen_number == 0:
         color = "🔴 RED & 🟣 VIOLET"
+    elif chosen_number == 5:
+        color = "🟢 GREEN & 🟣 VIOLET"
 
     # Determine big/small
     size = "BIG" if chosen_number >= 5 else "SMALL"
@@ -106,43 +93,32 @@ async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📢 Last Round Checked: {history['round']}"
     )
 
-# ✅ /live কমান্ড (API থেকে রিয়েল টাইম ডেটা)
+# /live কমান্ড (API থেকে লাইভ ডেটা)
 async def live(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        ts = int(time.time() * 1000)  # Dynamic timestamp
-        url = f"https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json?ts={ts}"
+        url = "https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistorylssuePage.json?ts=1758183840473"
         response = requests.get(url, timeout=10)
         data = response.json()
 
-        if "data" in data and "list" in data["data"]:
-            last_result = data["data"]["list"][0]
-            issue = last_result['issueNumber']
-            number = last_result['number']
-            color = last_result['color']
-            premium = last_result['premium']
+        last_result = data['data']['list'][0]
+        number = last_result['number']
+        color = last_result['color']
+        issue = last_result['issueNumber']
 
-            await update.message.reply_text(
-                f"📜 Latest Result\n"
-                f"━━━━━━━━━━━━━━━\n"
-                f"🎲 Issue: {issue}\n"
-                f"🔢 Number: {number}\n"
-                f"🎨 Color: {color}\n"
-                f"⭐ Premium: {premium}"
-            )
-        else:
-            await update.message.reply_text("⚠️ কোনো রেজাল্ট পাওয়া যায়নি।")
+        await update.message.reply_text(
+            f"📜 Latest Result:\n"
+            f"━━━━━━━━━━━━━━━\n"
+            f"Issue: {issue}\n"
+            f"Number: {number}\n"
+            f"Color: {color}"
+        )
     except Exception as e:
         await update.message.reply_text(f"⚠️ লাইভ ডেটা আনতে সমস্যা: {e}")
 
-import openai
-
-# ✅ OpenAI নতুন ভার্সনের জন্য কনফিগ
-client = openai.OpenAI(api_key=openai.api_key)
-
+# ChatGPT reply (✅ নতুন ভার্সন)
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
     try:
-        # ✅ নতুন ভার্সনের জন্য Chat API ব্যবহার
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": user_message}],
