@@ -1,4 +1,3 @@
-# main.py
 import os
 import json
 import time
@@ -17,19 +16,26 @@ from telegram.ext import (
     ContextTypes,
 )
 
-# CONFIG: environment variables
+# --- Environment Variables ---
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-OPENAI_API_KEY = os.getenv("Premium_Signal")  # optional
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # নামটা Secrets এ যেমন দিয়েছো তেমনই লিখতে হবে
 
-# OpenAI client (new sdk style). If OPENAI_API_KEY not provided, client remains None.
+if not BOT_TOKEN:
+    raise ValueError("❌ BOT_TOKEN পাওয়া যায়নি! Codespaces Secrets ঠিক আছে কিনা চেক করো।")
+
+if not OPENAI_API_KEY:
+    print("⚠️ সতর্কতা: OPENAI_API_KEY পাওয়া যায়নি। কিছু ফিচার কাজ নাও করতে পারে।")
+
+# --- OpenAI Setup ---
 client = None
 if OPENAI_API_KEY:
     openai.api_key = OPENAI_API_KEY
     client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
-# Logging
+# --- Logging Setup ---
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
 )
 
 STATE_FILE = "state.json"
