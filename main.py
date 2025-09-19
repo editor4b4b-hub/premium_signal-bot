@@ -1,6 +1,4 @@
-from dotenv import load_dotenv
-load_dotenv()
-
+# main.py
 import os
 import json
 import time
