@@ -3,6 +3,7 @@ import logging
 import random
 import openai
 import requests
+import time
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -39,8 +40,6 @@ def generate_signal():
         color = "🔴 RED"
     elif chosen_number == 0:
         color = "🔴 RED & 🟣 VIOLET"
-    elif chosen_number == 5:
-        color = "🟢 GREEN & 🟣 VIOLET"
 
     # Determine big/small
     size = "BIG" if chosen_number >= 5 else "SMALL"
@@ -92,13 +91,31 @@ async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📢 Last Round Checked: {history['round']}"
     )
 
-# /live কমান্ড (API থেকে লাইভ ডেটা)
+# ✅ /live কমান্ড (API থেকে রিয়েল টাইম ডেটা)
 async def live(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        url = "https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistorylssuePage.json?ts=1758183840473"
+        ts = int(time.time() * 1000)  # Dynamic timestamp
+        url = f"https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json?ts={ts}"
         response = requests.get(url, timeout=10)
         data = response.json()
-        await update.message.reply_text(f"📜 Live History:\n{data}")
+
+        if "data" in data and "list" in data["data"]:
+            last_result = data["data"]["list"][0]
+            issue = last_result['issueNumber']
+            number = last_result['number']
+            color = last_result['color']
+            premium = last_result['premium']
+
+            await update.message.reply_text(
+                f"📜 Latest Result\n"
+                f"━━━━━━━━━━━━━━━\n"
+                f"🎲 Issue: {issue}\n"
+                f"🔢 Number: {number}\n"
+                f"🎨 Color: {color}\n"
+                f"⭐ Premium: {premium}"
+            )
+        else:
+            await update.message.reply_text("⚠️ কোনো রেজাল্ট পাওয়া যায়নি।")
     except Exception as e:
         await update.message.reply_text(f"⚠️ লাইভ ডেটা আনতে সমস্যা: {e}")
 
