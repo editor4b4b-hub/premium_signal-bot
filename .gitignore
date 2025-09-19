@@ -1,36 +1,29 @@
-# Ignore Python bytecode
+# Ignore environment and secrets
+.env
+*.env
+*.key
+*.pem
+
+# Ignore Python cache & build files
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+*.pkl
 
-# Ignore virtual environments
+# Ignore virtual environment folders
 venv/
-.env/
-*.env
+.venv/
+env/
+ENV/
 
-# Ignore Jupyter Notebook checkpoints
-.ipynb_checkpoints/
+# Ignore state or log files
+*.log
+state.json
 
-# Ignore VSCode settings
-.vscode/
-*.code-workspace
-
-# Ignore system files
+# Ignore OS specific files
 .DS_Store
 Thumbs.db
 
-# Ignore logs and cache
-*.log
-*.cache
-
-# Ignore compiled binaries
-*.so
-*.exe
-*.dll
-
-# Ignore coverage and test outputs
-.coverage
-htmlcov/
-
-# Ignore temporary files
-*.tmp
-*.swp
+# Ignore VSCode settings
+.vscode/
