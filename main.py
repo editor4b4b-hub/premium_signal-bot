@@ -134,15 +134,20 @@ async def live(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"⚠️ লাইভ ডেটা আনতে সমস্যা: {e}")
 
-# ChatGPT reply
+import openai
+
+# ✅ OpenAI নতুন ভার্সনের জন্য কনফিগ
+client = openai.OpenAI(api_key=openai.api_key)
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
     try:
-        response = openai.ChatCompletion.create(
+        # ✅ নতুন ভার্সনের জন্য Chat API ব্যবহার
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": user_message}]
+            messages=[{"role": "user", "content": user_message}],
         )
-        reply = response.choices[0].message['content']
+        reply = response.choices[0].message.content
         await update.message.reply_text(reply)
     except Exception as e:
         await update.message.reply_text(f"⚠️ কিছু ভুল হয়েছে: {e}")
