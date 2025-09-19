@@ -11,8 +11,23 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 OPENAI_API_KEY = os.getenv("Premium_Signal")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# OpenAI কনফিগ
-openai.api_key = OPENAI_API_KEY
+import openai
+
+# ✅ OpenAI নতুন ভার্সনের জন্য কনফিগ
+client = openai.OpenAI(api_key=openai.api_key)
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_message = update.message.text
+    try:
+        # ✅ নতুন ভার্সনের জন্য Chat API ব্যবহার
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": user_message}],
+        )
+        reply = response.choices[0].message.content
+        await update.message.reply_text(reply)
+    except Exception as e:
+        await update.message.reply_text(f"⚠️ কিছু ভুল হয়েছে: {e}")
 
 # লগিং সেটআপ
 logging.basicConfig(
