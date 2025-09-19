@@ -1,2 +1,36 @@
-# ignore env file
-.env
+# Ignore Python bytecode
+__pycache__/
+*.py[cod]
+
+# Ignore virtual environments
+venv/
+.env/
+*.env
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore VSCode settings
+.vscode/
+*.code-workspace
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore logs and cache
+*.log
+*.cache
+
+# Ignore compiled binaries
+*.so
+*.exe
+*.dll
+
+# Ignore coverage and test outputs
+.coverage
+htmlcov/
+
+# Ignore temporary files
+*.tmp
+*.swp
