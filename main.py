@@ -4,24 +4,22 @@ import openai
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 
-# Secrets থেকে Key নাও
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# OpenAI কনফিগ
+print("DEBUG: OPENAI_API_KEY =", "LOADED" if OPENAI_API_KEY else "MISSING")
+print("DEBUG: BOT_TOKEN =", "LOADED" if BOT_TOKEN else "MISSING")
+
 openai.api_key = OPENAI_API_KEY
 
-# লগিং সেটআপ
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
 
-# /start কমান্ড
 async def start(update: Update, context):
     await update.message.reply_text("✅ Bot is running!")
 
-# মেসেজ হ্যান্ডলার
 async def handle_message(update: Update, context):
     user_message = update.message.text
     try:
@@ -34,7 +32,6 @@ async def handle_message(update: Update, context):
     except Exception as e:
         await update.message.reply_text(f"⚠️ Error: {str(e)}")
 
-# মেইন ফাংশন
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
